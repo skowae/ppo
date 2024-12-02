@@ -1,5 +1,8 @@
 import torch
 import numpy as np
+from ActorNetwork import *
+from CriticNetwork import *
+from Trajectories import *
 
 class Agent:
   def __init__(self, action_dim, input_dim, gamma=0.99, alpha=3e-4, lmda=0.95,
@@ -62,13 +65,15 @@ class Agent:
     """
     self.trajectories.update_trajectory(state, action, log_prob, value, reward, done)
 
-  def save_weights(self):
+  def save_weights(self, id_str=''):
     """
     Saves the model weights for the actor and the critic
+
+    :param id_str: Identifier string added to the file name
     """
     print("Saving model weights...")
-    self.actor.save_checkpoint()
-    self.critic.save_checkpoint()
+    self.actor.save_checkpoint(id_str)
+    self.critic.save_checkpoint(id_str)
 
   def load_weights(self):
     """
@@ -88,7 +93,7 @@ class Agent:
     :return value: The value estimate from the critic
     """
     # Convert the observation to a tensor
-    state = torch.tensor([observation], dtype=torch.float)
+    state = torch.tensor([observation], dtype=torch.float).to(self.actor.device)
     # Obtain the action probabilities
     action_probs = self.actor(state)
     # Sample the action
@@ -152,17 +157,17 @@ class Agent:
       ### Calculate Advantages ###
       advantages = self.calculate_advantages(value_array, reward_array, done_array)
       # Convert the advantages to a tensor
-      advantages = torch.tensor(advantages)
+      advantages = torch.tensor(advantages).to(self.actor.device)
       # Convert the values to a tensor
-      values = torch.tensor(value_array)
+      values = torch.tensor(value_array).to(self.actor.device)
       ### Calculate Advantages ###
 
       # Loop over the training batches
       for batch in batches:
         # Extract the batch
-        states = torch.tensor(state_array[batch], dtype=torch.float)
-        actions = torch.tensor(action_array[batch])
-        old_log_probs = torch.tensor(log_probs_array[batch])
+        states = torch.tensor(state_array[batch], dtype=torch.float).to(self.actor.device)
+        actions = torch.tensor(action_array[batch]).to(self.actor.device)
+        old_log_probs = torch.tensor(log_probs_array[batch]).to(self.actor.device)
 
         # Extract the new action and log probs from the actor
         new_action_probs = self.actor(states)

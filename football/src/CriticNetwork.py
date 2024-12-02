@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import os
+from Trajectories import *
 
 class CriticNetwork(nn.Module):
   def __init__(self, input_dim, alpha, hidden_dim=256,
@@ -16,6 +17,7 @@ class CriticNetwork(nn.Module):
     super(CriticNetwork, self).__init__()
 
     # Define a checkpoint file
+    self.log_dir = log_dir
     self.checkpoint_file = os.path.join(log_dir, 'critic_ppo.pt')
     # Define the network
     self.model = nn.Sequential(
@@ -27,8 +29,8 @@ class CriticNetwork(nn.Module):
     )
     # Define the optimizer
     self.optimizer = torch.optim.Adam(self.parameters(), lr=alpha)
-    # self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
-    # self.to(self.device
+    self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    self.to(self.device)
 
   def forward(self, x):
     """
@@ -40,10 +42,13 @@ class CriticNetwork(nn.Module):
     value = self.model(x)
     return value
 
-  def save_checkpoint(self):
+  def save_checkpoint(self, id_str):
     """
     Saves the model weights to a file
+
+    :param id_str: Identifier string added to the file name
     """
+    self.checkpoint_file = os.path.join(self.log_dir, f"{id_str}_critic_ppo.pt")
     torch.save(self.state_dict(), self.checkpoint_file)
 
   def load_checkpoint(self):

@@ -12,11 +12,13 @@ import numpy as np
 from util import *
 
 
-def train_curriculum(academy_scenarios):
+def train_curriculum(academy_scenarios, policy_path='', critic_path=''):
     """
     Trains a curriculum of different environments.
 
     :param academy_scenarios: The list of of scenario dictionaries
+    :param policy_path: Path to initial actor model weights
+    :param critic_path: Path to the initial critic model weights
     """
     # Create the curiculum dir
     session_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -42,8 +44,8 @@ def train_curriculum(academy_scenarios):
                 scenario_name,
                 num_agents,
                 reward_threshold,
-                policy_path=os.path.join(prev_scenario_dir, 'actor_ppo.pt'),
-                critic_path=os.path.join(prev_scenario_dir, 'critic_ppo.pt'),
+                policy_path=policy_path,
+                critic_path=critic_path,
                 log_dir=scenario_dir,
                 games=10000,
                 num_steps_per_batch=2048,
@@ -58,6 +60,8 @@ def train_curriculum(academy_scenarios):
             print(f"Actor Weights: {os.path.join(scenario_dir, 'actor_ppo.pt')}")
             print(f"Critic Weights: {os.path.join(scenario_dir, 'critic_ppo.pt')}")
             prev_scenario_dir = scenario_dir
+            policy_path = os.path.join(prev_scenario_dir, '_actor_ppo.pt')
+            critic_path = os.path.join(prev_scenario_dir, '_critic_ppo.pt')
 
 
 
@@ -85,12 +89,13 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
     :return False: If the training reached max games before the threshold
     """
     # Create the environment and extract the dimensions
+    is_rendering = False
     env = football_env.create_environment(
             env_name=env_name,
             representation='simple115',
             number_of_left_players_agent_controls=num_agents,
             rewards="scoring,checkpoints",    # Add checkpoint rewards
-            render=True
+            render=is_rendering
     )
     action_dim = len(football_action_set.action_set_dict['default'])
 
@@ -134,6 +139,7 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
     for i in range(games):
         # Reset the environment
         observation = env.reset()
+        info = None
 
         done = False
         total_reward = 0
@@ -173,8 +179,9 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
                 agent.remember(observation[k], action, log_probs, value, reward[k], done)
         
             # Capture the frame for rendering
-            frame = env.render(mode='rgb_array')
-            episode_frames.append(frame)
+            if is_rendering:
+                frame = env.render(mode='rgb_array')
+                episode_frames.append(frame)
 
             # Check if we have met the update number of episodes
             if steps % num_steps_per_batch == 0:
@@ -189,7 +196,7 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
                 policy_losses.append(policy_loss/num_agents)
                 value_losses.append(value_loss/num_agents)
                 num_updates += 1
-            elif steps % num_steps_per_batch == 1:    # Save a rendering after training
+            elif is_rendering and steps % num_steps_per_batch == 1:    # Save a rendering after training
                   # Save the episode frames as a video
                 video_path = os.path.join(render_dir, f"episode_{i}.mp4")
                 save_video(episode_frames, video_path)
@@ -204,7 +211,7 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
         # Update the best score
         if average_return > best_return:
             best_return = average_return
-            agent.save_weights()
+            agent.save_weights(f"episode_{i}")
 
         # Calculate the average losses
         avg_policy_loss = np.mean(policy_losses)
@@ -231,7 +238,7 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
 
         # Check if the average score is better than the threshold
         if average_return > reward_threshold:
-            agent.save_weights()
+            agent.save_weights("")
             print(f"Training {env_name} complete! Threshold {reward_threshold} met.")
             return True
 
@@ -245,7 +252,7 @@ if __name__ == "__main__":
         # {"scenario": "academy_empty_goal_close", "num_agents": 1, "reward_threshold": 1.8}, # For some reason when you score the reward is 2
         # {"scenario": "academy_empty_goal", "num_agents": 1, "reward_threshold": 1.8},
         # {"scenario": "academy_run_to_score", "num_agents": 1, "reward_threshold": 1.8},
-        {"scenario": "academy_run_to_score_with_keeper", "num_agents": 1, "reward_threshold": 1.4},
+        # {"scenario": "academy_run_to_score_with_keeper", "num_agents": 1, "reward_threshold": 1.4},
         {"scenario": "academy_pass_and_shoot_with_keeper", "num_agents": 2, "reward_threshold": 1.4},
         {"scenario": "academy_run_pass_and_shoot_with_keeper", "num_agents": 2, "reward_threshold": 1.4},
         {"scenario": "academy_3_vs_1_with_keeper", "num_agents": 3, "reward_threshold": 1.4},
@@ -257,4 +264,7 @@ if __name__ == "__main__":
         {"scenario": "11_vs_11_stochastic", "num_agents": 11, "reward_threshold": 1.4},
         {"scenario": "11_vs_11_hard_stochastic", "num_agents": 11, "reward_threshold": 1.4}
     ]
-    train_curriculum(academy_scenarios)
+
+    policy_path = '/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_13-48-56/academy_run_to_score_with_keeper/_actor_ppo.pt'
+    critic_path = '/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_13-48-56/academy_run_to_score_with_keeper/_critic_ppo.pt'
+    train_curriculum(academy_scenarios, policy_path, critic_path)
