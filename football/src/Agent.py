@@ -150,6 +150,7 @@ class Agent:
     # Define arrays to store the loss values
     policy_losses = []
     value_losses = []
+    entropies = []
     # Loop over every epoch
     for _ in range(self.epochs):
       state_array, action_array, log_probs_array, value_array, reward_array,\
@@ -185,8 +186,14 @@ class Agent:
         weighted_clipped_probs = torch.clamp(ratio,
                                              1 - self.clip,
                                              1 + self.clip)*advantages[batch]
+        
+        # Calculate the entropy
+        # entropy = -(new_action_probs * torch.log(new_action_probs + 1e-10)).sum(dim=-1).mean()
+        entropy = new_action_probs.entropy().mean()
+        entropies.append(entropy.item())
+
         # Calculate the policy loss
-        policy_loss = -torch.min(weighted_probs, weighted_clipped_probs).mean()
+        policy_loss = -torch.min(weighted_probs, weighted_clipped_probs).mean() - 0.01*entropy
         # print(policy_loss)
         policy_losses.append(policy_loss.item())
 
@@ -213,5 +220,4 @@ class Agent:
 
     # Clear the trajectories
     self.trajectories.clear()
-
-    return np.mean(policy_losses), np.mean(value_losses)
+    return np.mean(policy_losses), np.mean(value_losses), np.mean(entropies)

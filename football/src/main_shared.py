@@ -47,7 +47,7 @@ def train_curriculum(academy_scenarios, policy_path='', critic_path=''):
                 policy_path=policy_path,
                 critic_path=critic_path,
                 log_dir=scenario_dir,
-                games=10000,
+                games=int(35e4),
                 num_steps_per_batch=2048,
                 batch_size=64,
                 epochs=5
@@ -55,7 +55,7 @@ def train_curriculum(academy_scenarios, policy_path='', critic_path=''):
 
         if not is_trained:
             print(f"{scenario_name} failed to train successfully :(")
-            break
+            # break
         else:
             print(f"Actor Weights: {os.path.join(scenario_dir, 'actor_ppo.pt')}")
             print(f"Critic Weights: {os.path.join(scenario_dir, 'critic_ppo.pt')}")
@@ -109,7 +109,6 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
     os.makedirs(render_dir, exist_ok=True)
 
     # Create a list of Agents
-    print(policy_path)
     agent = Agent(
             action_dim,
             input_dim=max(env.observation_space.shape),
@@ -119,8 +118,8 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
             clip=0.2,
             batch_size=batch_size,
             epochs=epochs,
-            policy_path=policy_path,
-            critic_path=critic_path,
+            policy_path='policy_path',
+            critic_path='critic_path',
             log_dir=log_dir
     )
 
@@ -141,6 +140,7 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
         total_reward = 0
         policy_losses = []
         value_losses = []
+        entropies = []
         episode_frames = []  # List to store frames for the episode
         # Loop until the episode is done
         while not done:
@@ -184,10 +184,11 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
                 # Have the agent learn
                 policy_loss = 0
                 value_loss = 0
-                policy_loss, value_loss = agent.learn()
+                policy_loss, value_loss, entropy = agent.learn()
                 # Append the agent average losses
                 policy_losses.append(policy_loss)
                 value_losses.append(value_loss)
+                entropies.append(entropy)
                 num_updates += 1
             elif is_rendering and steps % num_steps_per_batch == 1:    # Save a rendering after training
                   # Save the episode frames as a video
@@ -209,11 +210,12 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
         # Calculate the average losses
         avg_policy_loss = np.mean(policy_losses)
         avg_value_loss = np.mean(value_losses)
+        avg_entropy = np.mean(entropies)
 
         # Print a log
         print('episode', i, 'score %.1f' % total_reward, 'avg score %.1f' % average_return,
                 'avg_policy_loss', avg_policy_loss, 'avg_value_loss', avg_value_loss,
-                'time_steps', steps, 'learning_steps', num_updates)
+                'avg_entropy', avg_entropy, 'time_steps', steps, 'learning_steps', num_updates)
 
         log_entry = {
             'episode': i,
@@ -221,6 +223,7 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
             'avg_return': average_return,
             'avg_policy_loss': avg_policy_loss,
             'avg_value_loss': avg_value_loss,
+            'avg_entropy': avg_entropy,
             'time_steps': steps,
             'learning_steps': num_updates
         }
@@ -260,6 +263,8 @@ if __name__ == "__main__":
 
     #policy_path = '/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_13-48-56/academy_run_to_score_with_keeper/_actor_ppo.pt'
     #critic_path = '/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_13-48-56/academy_run_to_score_with_keeper/_critic_ppo.pt'
-    policy_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_20-08-22/academy_empty_goal/_actor_ppo.pt'
-    critic_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_20-08-22/academy_empty_goal/_critic_ppo.pt'
+    # policy_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_20-08-22/academy_empty_goal/_actor_ppo.pt'
+    # critic_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_20-08-22/academy_empty_goal/_critic_ppo.pt'
+    policy_path=''
+    critic_path=''
     train_curriculum(academy_scenarios, policy_path, critic_path)
