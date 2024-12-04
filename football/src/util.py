@@ -36,7 +36,7 @@ def save_video(frames, path, fps=30):
     video.release()
 
 
-def smooth_plot(log_data, metric_key, window_size=10, scenario_name="", ylabel="Value"):
+def smooth_plot(log_data, metric_key, window_size=10, scenario_name="", ylabel="Value", save_dir='./'):
   """
   Generate a smoothed plot where each y value is an average over a rolling window of epochs.
   The x-axis reflects the true epoch numbers.
@@ -47,28 +47,39 @@ def smooth_plot(log_data, metric_key, window_size=10, scenario_name="", ylabel="
   :param scenario_name: Title of the plot for context
   :param ylabel: Y-axis label for the plot
   """
-  # Extract data, ignoring entries where the metric is NaN
-  epochs = [entry["episode"] for entry in log_data if not np.isnan(entry[metric_key])]
-  metrics = [entry[metric_key] for entry in log_data if not np.isnan(entry[metric_key])]
+  # Check if metric_key exists in the data
+  if any(metric_key in entry for entry in log_data):
+      file_name = os.path.join(save_dir, f'{scenario_name}_{metric_key}.png')
 
-  # Calculate rolling averages
-  smoothed_metrics = np.convolve(metrics, np.ones(window_size) / window_size, mode='valid')
+      # Extract data, ignoring entries where the metric is NaN
+      epochs = [entry["episode"] for entry in log_data if metric_key in entry and not np.isnan(entry[metric_key])]
+      metrics = [entry[metric_key] for entry in log_data if metric_key in entry and not np.isnan(entry[metric_key])]
 
-  # Align epochs to match the smoothed data
-  aligned_epochs = epochs[window_size - 1:]
+      # Check if there is enough data to create a plot
+      if len(metrics) > 0:
+          # Calculate rolling averages
+          smoothed_metrics = np.convolve(metrics, np.ones(window_size) / window_size, mode='valid')
 
-  # Plot the smoothed data
-  plt.figure(figsize=(10, 6))
-  plt.plot(epochs, metrics, alpha=0.3, label=f"Raw {metric_key.replace('_', ' ').title()}")
-  plt.plot(aligned_epochs, smoothed_metrics, label=f"Smoothed ({window_size} epochs)")
-  plt.title(f"{metric_key.replace('_', ' ').title()} Over Training: {scenario_name}")
-  plt.xlabel("Episode")
-  plt.ylabel(ylabel)
-  plt.legend()
-  plt.grid()
-  plt.show()
+          # Align epochs to match the smoothed data
+          aligned_epochs = epochs[window_size - 1:]
 
-def visualize_logs(log_file, scenario_name):
+          # Plot the smoothed data
+          plt.figure(figsize=(10, 6))
+          plt.plot(epochs, metrics, alpha=0.3, label=f"Raw {metric_key.replace('_', ' ').title()}")
+          plt.plot(aligned_epochs, smoothed_metrics, label=f"Smoothed ({window_size} epochs)")
+          plt.title(f"{metric_key.replace('_', ' ').title()} Over Training: {scenario_name}")
+          plt.xlabel("Episode")
+          plt.ylabel(ylabel)
+          plt.legend()
+          plt.grid()
+          plt.savefig(file_name)
+          plt.close()
+      else:
+          print(f"No valid data to plot for metric_key: {metric_key}")
+  else:
+      print(f"metric_key '{metric_key}' not found in the log data.")
+
+def visualize_logs(log_file, scenario_name, save_dir):
   """
   Generate all graphs from the logs.
 
@@ -83,7 +94,8 @@ def visualize_logs(log_file, scenario_name):
   log_data = load_logs(log_file)
 
   # Generate all graphs
-  smooth_plot(log_data, "score", window_size=10, scenario_name=scenario_name, ylabel="Score")
-  smooth_plot(log_data, "avg_score", window_size=10, scenario_name=scenario_name, ylabel="Average Score")
-  smooth_plot(log_data, "avg_policy_loss", window_size=10, scenario_name=scenario_name, ylabel="Average Policy Loss")
-  smooth_plot(log_data, "avg_value_loss", window_size=10, scenario_name=scenario_name, ylabel="Average Value Loss")
+  smooth_plot(log_data, "return", window_size=10, scenario_name=scenario_name, ylabel="Return", save_dir=save_dir)
+  smooth_plot(log_data, "avg_return", window_size=10, scenario_name=scenario_name, ylabel="Average Return", save_dir=save_dir)
+  smooth_plot(log_data, "avg_policy_loss", window_size=10, scenario_name=scenario_name, ylabel="Average Policy Loss", save_dir=save_dir)
+  smooth_plot(log_data, "avg_value_loss", window_size=10, scenario_name=scenario_name, ylabel="Average Value Loss", save_dir=save_dir)
+  smooth_plot(log_data, "entropy", window_size=10, scenario_name=scenario_name, ylabel="Average Entropy", save_dir=save_dir)

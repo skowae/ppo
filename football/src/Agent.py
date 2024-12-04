@@ -193,7 +193,7 @@ class Agent:
         entropies.append(entropy.item())
 
         # Calculate the policy loss
-        policy_loss = -torch.min(weighted_probs, weighted_clipped_probs).mean() - 0.01*entropy
+        policy_loss = -torch.min(weighted_probs, weighted_clipped_probs).mean() - 0*entropy
         # print(policy_loss)
         policy_losses.append(policy_loss.item())
 

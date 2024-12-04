@@ -117,17 +117,17 @@ def create_renderings(num_vids, scenario_name, num_agents, policy_path, critic_p
         print('episode', i, 'score %.1f' % total_reward, 'avg score %.1f' % average_return,
                 'time_steps', steps, 'learning_steps', num_updates)
 
-        log_entry = {
-            'episode': i,
-            'return': total_reward,
-            'avg_return': average_return,
-            'time_steps': steps,
-            'learning_steps': num_updates
-        }
-        log_data.append(log_entry)
+        # log_entry = {
+        #     'episode': i,
+        #     'return': total_reward,
+        #     'avg_return': average_return,
+        #     'time_steps': steps,
+        #     'learning_steps': num_updates
+        # }
+        # log_data.append(log_entry)
 
-        with open(log_file, "w") as f:
-            f.write(json.dumps(log_data))
+        # with open(log_file, "w") as f:
+        #     f.write(json.dumps(log_data))
             
     print(f"Renderings saved to {save_dir}")
 
@@ -137,9 +137,9 @@ if __name__ == "__main__":
     num_vids = 10
     scenario_name = "academy_empty_goal_close"
     num_agents = 1
-    policy_path = "/home/bubbles/foundations_rl/ppo/football/logs/2024-12-02_18-45-47/academy_empty_goal_close/_actor_ppo.pt"
-    critic_path = "/home/bubbles/foundations_rl/ppo/football/logs/2024-12-02_18-45-47/academy_empty_goal_close/_critic_ppo.pt"
-    save_dir = "/home/bubbles/foundations_rl/ppo/football/logs/2024-12-02_18-45-47/academy_empty_goal_close/renders"
-    file_id = "final_wieghts"
+    policy_path = "/home/bubbles/foundations_rl/ppo/football/logs/2024-12-02_18-45-47_entropy_0.01/academy_empty_goal/episode_0_actor_ppo.pt"
+    critic_path = "/home/bubbles/foundations_rl/ppo/football/logs/2024-12-02_18-45-47_entropy_0.01/academy_empty_goal/episode_0_critic_ppo.pt"
+    save_dir = "/home/bubbles/foundations_rl/ppo/football/logs/2024-12-02_18-45-47_entropy_0.01/academy_empty_goal/renders"
+    file_id = "initial_weights"
     # Create the renderings
     create_renderings(num_vids, scenario_name, num_agents, policy_path, critic_path, save_dir, file_id)

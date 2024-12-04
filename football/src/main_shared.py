@@ -118,8 +118,8 @@ def train(env_name, num_agents, reward_threshold, policy_path, critic_path,
             clip=0.2,
             batch_size=batch_size,
             epochs=epochs,
-            policy_path='policy_path',
-            critic_path='critic_path',
+            policy_path=policy_path,
+            critic_path=critic_path,
             log_dir=log_dir
     )
 
@@ -265,6 +265,6 @@ if __name__ == "__main__":
     #critic_path = '/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_13-48-56/academy_run_to_score_with_keeper/_critic_ppo.pt'
     # policy_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_20-08-22/academy_empty_goal/_actor_ppo.pt'
     # critic_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-01_20-08-22/academy_empty_goal/_critic_ppo.pt'
-    policy_path=''
-    critic_path=''
+    policy_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-03_21-01-41/academy_empty_goal_close/_actor_ppo.pt'
+    critic_path='/home/bubbles/foundations_rl/ppo/football/logs/2024-12-03_21-01-41/academy_empty_goal_close/_critic_ppo.pt'
     train_curriculum(academy_scenarios, policy_path, critic_path)
